@@ -2,7 +2,9 @@ from dotenv import load_dotenv
 import os
 
 # Determine which environment we're in
-ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')  # default to 'development'
+#ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')  # default to 'development'
+print(os.getenv('ENVIRONMENT'))
+ENVIRONMENT = 'production'
 
 # Load the appropriate .env file
 if ENVIRONMENT == 'production':
@@ -17,7 +19,7 @@ API_VERSION = '1.3.8'
 JWT_SECRET=os.getenv('JWT_SECRET')
 JWT_AUTH_HEADER_PREFIX=os.getenv('JWT_AUTH_HEADER_PREFIX')
 
-ROOT_UPLOAD_FOLDER=os.getenv('ROOT_UPLOAD_FOLDER')
+ROOT_DOWNLOAD_FOLDER=os.getenv('ROOT_DOWNLOAD_FOLDER')
 
 # DATABASE
 PG_USER=os.getenv('PG_USER')

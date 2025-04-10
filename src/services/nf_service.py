@@ -12,7 +12,6 @@ class NotaFiscalService:
                                transaction_id, request_origin, selected_client=0):        
         nf_processor = NotaFiscalProcessorService()
         try:
-            # the folder the files will be extracted from zip
             folder_extract_zip = join(os.path.dirname(full_path_zip_filename), 'extract')
             
             nf_processor.setup(request_origin, 
@@ -93,7 +92,7 @@ class NotaFiscalService:
             nf_processor.end()
             
             # envia email de log completo
-            nf_processor.send_email_logs()
+            #nf_processor.send_email_logs()
             
             return {
                 "status": logou, 

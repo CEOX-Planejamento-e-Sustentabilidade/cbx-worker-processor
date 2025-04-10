@@ -11,7 +11,7 @@ from collections import Counter
 from pathlib import Path
 from domain.ncms import get_ncms
 from configs import *
-from sqlalchemy import text
+from sqlalchemy import bindparam, text
 
 from services.utils import get_db_connection, get_engine, is_number
 
@@ -229,7 +229,7 @@ class NotaFiscalXmlService:
             
             # consultar NCMs
             ncms, _ = get_ncms()
-            columns_ncm = ['id', 'name', 'status', 'properties', 'ncm', 'tipo', 'grupo']
+            columns_ncm = ['id', 'name', 'ncm', 'status', 'tipo', 'grupo', 'properties']
             df_ncms = pd.DataFrame(ncms, columns=columns_ncm)
 
             df_ncms = df_ncms.drop(['id', 'status', 'properties'], axis=1)
@@ -664,7 +664,7 @@ class NotaFiscalXmlService:
             return erros, 0, len(erros), 0, 0
                 
         try:
-            with get_db_connection() as con:
+            with get_db_connection() as connection, connection.cursor() as cursor:
                 # Obtém os valores únicos de key_nf do df1
                 keys_nf = set(df1['key_nf']) # set(pd.concat([df1['key_nf'], df2['key_nf']]))
 
@@ -675,7 +675,8 @@ class NotaFiscalXmlService:
                     where = f"WHERE key_nf IN ({keys_nf_str})"
 
                     # Executa a consulta no banco
-                    result = con.execute(f"SELECT key_nf FROM cbx.nf {where}").fetchall()
+                    cursor.execute(f"SELECT key_nf FROM cbx.nf {where}")
+                    result = cursor.fetchall()
 
                     # Extrai os valores únicos retornados do banco
                     chaves_set = {row[0] for row in result}
@@ -702,11 +703,17 @@ class NotaFiscalXmlService:
                 
                 # deleta todas as chaves da nf view que vão ser inseridas 
                 if not df2_final.empty:
-                    keys_nf_list = df2_final['key_nf'].tolist()
-                    con.execute(
-                        text("DELETE FROM cbx.nf WHERE key_nf IN :keys_nf"),
-                        {"keys_nf": tuple(keys_nf_list)}
-                    )
+                    try:
+                        enginex = get_engine()
+                        with enginex.begin() as connection:  # já faz o commit automaticamente
+                            keys_nf_list = df2_final['key_nf'].tolist()
+                            stmt = text("DELETE FROM cbx.nf_view WHERE key_nf IN :keys_nf").bindparams(
+                                bindparam("keys_nf", expanding=True)
+                            )                                                    
+                            connection.execute(stmt, {"keys_nf": keys_nf_list})
+                    except Exception as e:
+                        # não precisa de rollback manual aqui, o `begin()` faz isso automaticamente em caso de erro                    
+                        erros.append(f"Erro ao deletar : {str(e)}")                        
         except Exception as e:
             erros.append(f"Erro ao extrair dados dos XMLs: {str(e)}")
             return erros, 0, len(erros), 0, 0
