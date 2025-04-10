@@ -90,7 +90,9 @@ class WorkerProcessor:
         try:
             self.logger_service.info("<<<--- INÍCIO PROCESSOR --->>>")
             sucesso, msg = self.run()
+            self.logger_service.info(msg)
             return sucesso, msg
+        
         except Exception as ex:
             msg = f"ERROR: {str(ex)}"            
             self.logger_service.error(msg)
