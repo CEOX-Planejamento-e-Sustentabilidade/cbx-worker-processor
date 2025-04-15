@@ -47,22 +47,24 @@ class NotaFiscalService:
                 df = nf_processor.processar_sefaz()
             elif tipo == 23:
                 df = nf_processor.processar_chaves()
-                            
+            
+            df_output = nf_processor.copy_output(df)
+            
             # define coluna chave nf
             key_nf_column = nf_processor.get_key_col(tipo)
             if tipo in [21, 22, 23]:
                 df_sync = nf_processor.sync_key_nf(df, key_nf_column)
                 df = nf_processor.filter_by_df_sync(df, df_sync, key_nf_column)                
             
-            # upa zip s3
+            # upa zip s3 
             #s3_path_zip = nf_processor.upload_zip_s3()
             
             # gera excel e upa s3
-            s3_path_excel = nf_processor.upload_excel_nf_s3(df)
+            s3_path_excel = nf_processor.upload_excel_nf_s3(df_output)
             
             # obtem urls s3
-            input_url = nf_processor.get_input_url(s3_path_zip)
-            output_url = nf_processor.get_output_url(s3_path_excel)
+            input_url = nf_processor.get_input_url(s3_path_zip, expires=432000) # 5 dias em segundos
+            output_url = nf_processor.get_output_url(s3_path_excel, expires=432000) # 5 dias em segundos
             
             # envia e-mail do processamento do arquivo
             nf_processor.send_email_process(input_url, output_url)
@@ -80,8 +82,8 @@ class NotaFiscalService:
                 # salva xml no banco de dados
                 nf_processor.salvar_xml()
                 
-                # apaga as chaves quando não for DANFE ou SEFAZ            
-                # as chaves na tabela de controle devem ser deletadas se o processamento não envolver DANFEs ou SEFAZ,
+                # apaga as chaves quando não for DANFE, SEFAZ ou CHAVES
+                # as chaves na tabela de controle devem ser deletadas se o processamento não envolver DANFE, SEFAZ ou CHAVES,
                 # deve-se deletar as chaves associadas ao Transaction ID recebido, não há mais ncessidade de controle sobre elas
                 nf_processor.delete_keys_nf(transaction_id)
                 

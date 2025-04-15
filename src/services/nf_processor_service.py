@@ -118,7 +118,7 @@ class NotaFiscalProcessorService:
         self.total_files = result.get("total_files", 0)        
         df = result['df'] if 'df' in result and result['df'] is not None and not result['df'].empty else None
         if not status:
-            self.track_monitoring(f"Erro ao processar DANFES. Total de Arquivos: {self.total_files} | Total de Erros: {len(erros)}")
+            self.track_monitoring(f"Arquivo de DANFES não processados. Total de Arquivos: {self.total_files} | Total de Erros: {len(erros)}")
             self.ok = False
         else:
             self.track_log(f'DANFES processadas. Total Arquivos: {self.total_files} | Total de Erros: {len(erros)}')
@@ -140,7 +140,7 @@ class NotaFiscalProcessorService:
         self.total_files = result.get("total_files", 0)        
         df = result['df'] if 'df' in result and not result['df'].empty else None
         if not status:
-            self.track_monitoring(f"Erro ao processar INSUMOS. Total de Arquivos: {self.total_files} | Total de Erros: {len(erros)}")
+            self.track_monitoring(f"Arquivo de INSUMOS não processados. Total de Arquivos: {self.total_files} | Total de Erros: {len(erros)}")
             self.ok = False
         else:
             self.track_log(f'NFs INSUMO processadas. Total Arquivos: {self.total_files} | Total de Erros: {len(erros)}')
@@ -162,7 +162,7 @@ class NotaFiscalProcessorService:
         self.total_files = result.get("total_files", 0)        
         df = result['df'] if 'df' in result and not result['df'].empty else None
         if not status:
-            self.track_monitoring(f"Erro ao processar NFs MILHO. Total de Arquivos: {self.total_files} | Total de Erros: {len(erros)}")
+            self.track_monitoring(f"Arquivo de MILHO nao processados. Total de Arquivos: {self.total_files} | Total de Erros: {len(erros)}")
             self.ok = False
         else:
             self.track_log(f'NFs MILHO processadas. Total Arquivos: {self.total_files} | Total de Erros: {len(erros)}')
@@ -184,7 +184,7 @@ class NotaFiscalProcessorService:
         self.total_files = result.get("total_files", 0)        
         df = result['df'] if 'df' in result and not result['df'].empty else None
         if not status:
-            self.track_monitoring(f"Erro ao processar NFs CBIOS. Total de Arquivos: {self.total_files} | Total de Erros: {len(erros)}")
+            self.track_monitoring(f"Arquivo de CBIOS não processados. Total de Arquivos: {self.total_files} | Total de Erros: {len(erros)}")
             self.ok = False
         else:
             self.track_log(f'NFs CBIOS processadas. Total Arquivos: {self.total_files} | Total de Erros: {len(erros)}')
@@ -206,7 +206,7 @@ class NotaFiscalProcessorService:
         self.total_files = result.get("total_files", 0)        
         df = result['df'] if 'df' in result and result['df'] is not None and not result['df'].empty else None
         if not status:
-            self.track_monitoring(f"Erro ao processar SEFAZ. Total de Arquivos: {self.total_files} | Total de Erros: {len(erros)}")
+            self.track_monitoring(f"Arquivo de SEFAZ não processados. Total de Arquivos: {self.total_files} | Total de Erros: {len(erros)}")
             self.ok = False
         else:
             self.track_log(f'SEFAZ processadas. Total Arquivos: {self.total_files} | Total de Erros: {len(erros)}')
@@ -228,7 +228,7 @@ class NotaFiscalProcessorService:
         self.total_files = result.get("total_files", 0)        
         df = result['df'] if 'df' in result and result['df'] is not None and not result['df'].empty else None
         if not status:
-            self.track_monitoring(f"Erro ao processar CHAVES. Total de Arquivos: {self.total_files} | Total de Erros: {len(erros)}")
+            self.track_monitoring(f"Arquivo de CHAVES não processados. Total de Arquivos: {self.total_files} | Total de Erros: {len(erros)}")
             self.ok = False
         else:
             self.track_log(f'CHAVES processadas. Total Arquivos: {self.total_files} | Total de Erros: {len(erros)}')
@@ -236,17 +236,26 @@ class NotaFiscalProcessorService:
             self.track_log(erros)
             self.track_error(erros)            
         return df
+    
+    # 2. processa xmls do zip (insumos)
+    def copy_output(self, df):
+        if df is not None and not df.empty:
+            self.track_log(f"Total de NFs processadas (Dataframe): {len(df)}")
+            df_output = df.copy()
+            self.track_log(f"Cópia para output (Dataframe): {len(df_output)}")
+            return df_output
+        return None
       
     # 3. sincroniza chaves no banco de dados para controle
     def sync_key_nf(self, df, column_key_nf: str = 'key_nf'):
         if DEBUG:
             return df
         if not self.ok:
+            self.track_monitoring(f'Não foi possível sincronizar chaves, lista NFs consolidadas não foi gerada.')
             return df
-             
         # validar chaves banco de dados (somente chaves não processadas)
         self.track_log(f'Sincronizando Chaves no banco de dados')
-        total_antes = len(df)        
+        total_antes = len(df)
         df, error = self.robo_chaves_service.sync_key_nf(self.transaction_id, df, column_key_nf)
         if error:
             self.track_monitoring(error)
@@ -300,12 +309,16 @@ class NotaFiscalProcessorService:
     
     # 5. upload excel to s3
     def upload_excel_nf_s3(self, df):
-        if not self.ok:
+        #if not self.ok:
+        #    self.track_monitoring(f'Arquivo Excel não gerado, lista NFs consolidadas não foi gerada.')
+        #    return
+        if df is None or df.empty:
+            self.track_monitoring(f'Arquivo Excel não gerado, lista NFs consolidadas não foi gerada. DataFrame vazio.')
             return
                         
         self.track_log(f'Gerando e Uploading Excel para o S3')
         s3_path = ''
-                
+                        
         try:
             # nome do arquivo sem extensão
             prefix = f"{Path(self.full_path_zip_filename).stem}" # facilitar o entendimento, nome do excel vai ser o mesmo nome do zip
@@ -369,13 +382,13 @@ class NotaFiscalProcessorService:
         return s3_path    
     
     # 6. get input url
-    def get_input_url(self, s3_path_zip: str):
-        if not self.ok:
-            return
+    def get_input_url(self, s3_path_zip: str, expires=3600):
+        #if not self.ok:
+        #    return
         
         # obtem url zip S3 (input)
         self.track_log(f'Obtendo URL S3 Zip')
-        input_url, error = self.aws_service.get_s3_url(s3_path_zip)
+        input_url, error = self.aws_service.get_s3_url(s3_path_zip, expires)
         if error:
             self.track_monitoring(error)
         else:
@@ -383,13 +396,13 @@ class NotaFiscalProcessorService:
         return input_url
     
     # 7. get output url
-    def get_output_url(self, s3_path_excel):
-        if not self.ok:
-            return
+    def get_output_url(self, s3_path_excel, expires=3600):
+        #if not self.ok:
+        #    return
         
         # obtem url excel S3 (output)
         self.track_log(f'Obtendo URL S3 Excel')
-        output_url, error = self.aws_service.get_s3_url(s3_path_excel)
+        output_url, error = self.aws_service.get_s3_url(s3_path_excel, expires)
         if error:
             self.track_monitoring(error)
         else:
@@ -455,7 +468,7 @@ class NotaFiscalProcessorService:
         tipo_str = self.get_tipo_str(self.tipo)
         if not self.ok:
             # envia e-mail do input (zip) e ouptut (excel) para o usuário
-            body_html, body_text = self.nf_email_service.get_body_no_processing(input_url, self.transaction_id, self.get_errors())
+            body_html, body_text = self.nf_email_service.get_body_no_processing(input_url, output_url, self.transaction_id, self.get_errors())
             subject = self.nf_email_service.get_subject_no_processing(tipo_str, self.zip_name, self.request_origin)
         else:
             # envia e-mail do input (zip) e ouptut (excel) para o usuário
@@ -475,13 +488,6 @@ class NotaFiscalProcessorService:
         else:
             self.track_monitoring(msg)
             return False            
-        # error, res = self.nf_email_service.send_email(self.user_email, self.zip_name, body_html, body_text, subject)    
-        # if error:
-        #     self.track_monitoring(error)
-        #     return False
-        # else:
-        #     self.track_log(f'Email enviado para {self.user_email}')
-        #     return True
     
     # 11. registra log
     def log_process(self, input_url, output_url):
@@ -532,11 +538,6 @@ class NotaFiscalProcessorService:
         if not sucesso:
             self.track_error(msg)
         return sucesso
-        # error, res = self.nf_email_service.send_email(self.user_email, self.zip_name, body_html, body_text, subject)
-        # if error:
-        #     return False
-        # else:
-        #     return True    
         
     # 14. salva xml no banco de dados
     def salvar_xml(self):

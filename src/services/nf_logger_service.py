@@ -26,8 +26,7 @@ class NotaFiscalLoggerService:
         else:
             self.errors.append(f"{timestamp} -> {msg_or_msgs}")  # Assume it's a single string
             self.logger_service.error(msg_or_msgs)
-            #print(f"{timestamp} -> {msg_or_msgs}")
-    
+                
     def track_log(self, msg_or_msgs):
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3] # 2025-03-12 14:30:45.456
         if isinstance(msg_or_msgs, list):
@@ -36,10 +35,8 @@ class NotaFiscalLoggerService:
         else:
             self.logs.append(f"{timestamp} -> {msg_or_msgs}")  # Assume it's a single string
             self.logger_service.info(msg_or_msgs)
-            #print(f"{timestamp} -> {msg_or_msgs}")
         
     def separator(self):
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3] # 2025-03-12 14:30:45.456
         self.logs.append(f"{timestamp} -> ----------------------------------------------------")
         self.logger_service.info("----------------------------------------------------")
-        #print(f"{timestamp} -> ----------------------------------------------------")

@@ -1,12 +1,8 @@
-import csv
 import json
 import os
 import tempfile
 import uuid
 import boto3
-from pandas import DataFrame, ExcelWriter
-from services.email_service import EmailService
-from services.file_service import FileService
 from configs import ACCESS_KEY, SECRET_KEY, REGION_NAME, BUCKET_NAME, ROOT_DOWNLOAD_FOLDER, WAIT_TIME_SECONDS
 
 class AwsService:
@@ -44,7 +40,7 @@ class AwsService:
             msg = f'Erro ao fazer download do S3: {str(ex)}'
             return False, msg
 
-    def get_s3_url(self, s3_path, expires=3600):        
+    def get_s3_url(self, s3_path, expires=3600):
         try:
             s3 = self.sign()
             url = s3.generate_presigned_url(ClientMethod='get_object', Params={'Bucket': BUCKET_NAME, 'Key': s3_path}, ExpiresIn=expires)

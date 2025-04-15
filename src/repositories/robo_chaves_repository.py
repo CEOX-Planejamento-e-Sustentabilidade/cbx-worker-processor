@@ -39,13 +39,7 @@ class RoboChavesRepository(BaseRepository, IRoboChavesRepository):
                 for user in locked_rows:
                     session.delete(user)  # Mark for deletion
                 
-                session.commit()
-                
-                #stmt = delete(RoboChaves).where(RoboChaves.transaction_id == transaction_id)
-                #result = session.execute(stmt)
-                #session.commit()
-                #if result.rowcount == 0:
-                #    raise Exception(f"Entidade {RoboChaves.__name__} Transaction ID: {str(transaction_id)} não foi deletado")
+                session.commit()                
             except Exception as ex:
                 session.rollback()
                 raise ex
@@ -61,13 +55,7 @@ class RoboChavesRepository(BaseRepository, IRoboChavesRepository):
                 for user in locked_rows:
                     session.delete(user)  # Mark for deletion
                 
-                session.commit()
-                
-                #stmt = delete(RoboChaves).where(RoboChaves.transaction_id == transaction_id and RoboChaves.key_nf == key_nf)
-                #result = session.execute(stmt)
-                #session.commit()
-                #if result.rowcount == 0:
-                #    raise Exception(f"Entidade {RoboChaves.__name__} Transaction ID: {str(transaction_id)} não foi deletado")
+                session.commit()                
             except Exception as ex:
                 session.rollback()
                 raise ex

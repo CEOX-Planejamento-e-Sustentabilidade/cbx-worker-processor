@@ -117,12 +117,7 @@ class WorkerProcessor:
         try:
             self.logger_service.info("<<<--- INÍCIO PROCESSOR --->>>")
             self.logger_service.info("Modo DEBUG: " + str(DEBUG))
-            self.logger_service.info("ENVIRONMENT: " + ENVIRONMENT)
-            self.logger_service.info("------------------------")
-            self.logger_service.info(f"[worker-processor] <os.environ.get> ENVIRONMENT: {os.environ.get('ENVIRONMENT')}")
-            self.logger_service.info(f"[worker-processor] <os.getenv> ENVIRONMENT: {os.getenv('ENVIRONMENT', 'development')}")            
-            self.logger_service.info("------------------------")
-            
+            self.logger_service.info("ENVIRONMENT: " + ENVIRONMENT)            
             sucesso, msg = self.run()
             self.logger_service.info(msg)
             return sucesso, msg        
@@ -156,3 +151,4 @@ class WorkerProcessor:
 if __name__ == "__main__":
     worker = WorkerProcessor()
     worker.iniciar_worker()
+    worker.logger_service.info("CONTAINER FINALIZADO")

@@ -205,7 +205,7 @@ class NotaFiscalXmlService:
         erros = []
         try:
             dados = []
-            xml_folder = Path(pasta).rglob('*.xml')            
+            xml_folder = Path(pasta).rglob('*.xml')
             files = [x for x in xml_folder]
             
             for f in files:
@@ -215,12 +215,12 @@ class NotaFiscalXmlService:
                         if dados_nfs is not None:
                             dados = dados_nfs
                     except Exception as ex:
-                        erros.append(f"erro arquivo {str(f)} - exception: {str(ex)}")
+                        erros.append(f"Erro no arquivo XML {str(f)}: {str(ex)}")
 
             df = pd.DataFrame(dados)
             
             if df.empty:
-                erros.append(f"Sem xmls válidos para processar - Arquivo: {str(filename)}")
+                erros.append(f"Não há XMLs ou XMLs inválidos. Output não gerado. Arquivo: {str(filename)}")
                 return {
                     "status": False, 
                     "erros": erros, 
@@ -327,7 +327,7 @@ class NotaFiscalXmlService:
             df = pd.DataFrame(dados)
 
             if df.empty:
-                erros.append(f"Sem xmls válidos para processar. Arquivo: {str(filename)}")
+                erros.append(f"Não há XMLs ou XMLs inválidos. Output não gerado. Arquivo: {str(filename)}")
                 return {
                     "status": False, 
                     "erros": erros, 
@@ -598,7 +598,7 @@ class NotaFiscalXmlService:
             df = pd.DataFrame(dados)
             
             if df.empty:
-                erros.append(f"Sem xmls válidos para processar. Arquivo: {str(filename)}")
+                erros.append(f"Não há XMLs ou XMLs inválidos. Output não gerado. Arquivo: {str(filename)}")
                 return {
                     "status": False, 
                     "erros": erros, 

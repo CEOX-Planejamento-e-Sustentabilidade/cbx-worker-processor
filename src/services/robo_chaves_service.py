@@ -48,8 +48,10 @@ class RoboChavesService:
             DataFrame com as chaves que foram sincronizadas.
         str
             Mensagem de erro caso ocorra algum erro durante a sincronizacao.
-        """
+        """        
         error: str = ''
+        if df.empty:
+            return df, error
         try:
             # garantir que a coluna key_nf seja chamada key_nf
             df = df.rename(columns={column_key_nf: 'key_nf'})

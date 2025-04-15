@@ -147,11 +147,12 @@ class NotaFiscalEmailService:
 
         return html_content, plain_text
 
-    def get_body_no_processing(self, input_url: str, transaction_id: str, errors = []):
+    def get_body_no_processing(self, input_url: str, output_url: str, transaction_id: str, errors = []):
         style = self.get_style()
         error_html = self.get_errors_html(errors)
         
         inp = f'<li>📦 <a href="{input_url}" target="_blank">Baixar arquivo de input (ZIP)</a></li>' if input_url else '<li>Url do arquivo de input não foi gerada</li>'
+        out = f'<li>📄 <a href="{output_url}" target="_blank">Baixar relatório detalhado (Excel)</a></li>' if output_url else '<li>Url do arquivo de output não foi gerada</li>'
                         
         html_content = f'''
         <!DOCTYPE html>
@@ -163,10 +164,12 @@ class NotaFiscalEmailService:
         </head>
         <body>
             <div class="container">
-                <h2>Nenhuma chave disponível para processamento.</h2>
+                <h2>Relatório de Processamento do arquivo de Input</h2>          
+                <p>Nenhuma chave disponível para processamento.</p>
                 <p>O arquivo já foi processado anteriormente ou houve falha. Transaction ID: {transaction_id}</p>
                 <ul>
                     {inp}
+                    {out}
                 </ul>
             </div>
             
@@ -179,7 +182,8 @@ class NotaFiscalEmailService:
         plain_text = f"Nenhuma chave disponível para processamento.\n"
         plain_text = f"Transaction ID: {transaction_id}\n"        
         plain_text += "O arquivo já foi processado anteriormente ou houve falha.\n"
-        plain_text += f"\n{input_url}\n"        
+        plain_text += f"\n{input_url}\n"
+        plain_text += f"\n{output_url}\n"
         plain_text += "\nERROS:\n" + "\n".join(errors) + "\n"
         plain_text += f"\nQualquer dúvida, entre em contato\n"
         plain_text += f"\nEquipe de TI"        

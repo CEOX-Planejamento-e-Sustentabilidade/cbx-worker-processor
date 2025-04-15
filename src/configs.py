@@ -3,7 +3,6 @@ import os
 
 # Determine which environment we're in
 #ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')  # default to 'development'
-print(os.getenv('ENVIRONMENT'))
 ENVIRONMENT = 'production'
 
 # Load the appropriate .env file
