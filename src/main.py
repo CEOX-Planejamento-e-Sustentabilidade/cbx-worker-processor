@@ -1,7 +1,10 @@
+import json
 import shutil
 import uuid
 
 from pathlib import Path
+
+import jwt
 from configs import *
 from services.aws_service import AwsService
 from services.email_service import EmailService
@@ -24,11 +27,18 @@ class WorkerProcessor:
             # envia os arquivos processados para o S3
             # envia email com os links dos arquivos processados
             
-            if DEBUG:               
+            if DEBUG:
+                #json_user = json.loads('{"auth": true, "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImVkemF0YXJpbkBnbWFpbC5jb20iLCJ1c2VyIjpbMTMzLCJoZWxkZXJAY2J4c3VzdGVudGFiaWxpZGFkZS5jb20uYnIiLCIwMzUxYTMyYzc0MTU1ZDRkZTcxOGYyYWYwYTU5ZmY3N2M1MGExODIwYjk4OTZiYmQ0ZjMyYzMxYWQ1YTkwODQyIix7Im5hbWUiOiJIZWxkZXIgQ2FzdHJvIiwiY2xpZW50cyI6WzMsMiwxLDcsMTJdLCJzZW5kX3F1ZXVlIjp0cnVlLCJtZXNzYWdlX2dyb3VwIjoiQ0JYIn0sdHJ1ZSwiYW5hbGlzdGEiXX0.VyaUdL6cIJWOlEYdaR2n8c9VhIpu4wmAkij3_KDuocI", "role": "analista", "clients": [3, 2, 1, 7, 12]}')
+                #token = f'Bearer {json_user["token"]}'
+                #userdata = jwt.decode(token.replace('Bearer ', ''), JWT_SECRET, algorithms=['HS256'])                                
+                #send_queue = userdata['user'][3]['send_queue'] if 'send_queue' in userdata['user'][3] else False
+                #message_group = userdata['user'][3]['message_group'] if 'message_group' in userdata['user'][3] else 'NO_MSG_GROUP'
+                
                 transaction_id = '4f3f8a5b-a8ec-493f-87ff-144205ee12r4'
                 zip_name = 'XMLs-ba40b6951'
                 tipo = 1
                 email = 'edzatarin@gmail.com'
+                email_request = 'edzatarin@gmail.com'
                 s3_path = 'input/XMLs-ba40b6951.zip'
                 client_id = 1
                 message_group = 'CBX'
@@ -57,6 +67,7 @@ class WorkerProcessor:
                 
                 # dados do usuário
                 message_group = os.getenv("MESSAGE_GROUP")
+                email_request = os.getenv("EMAIL_REQUEST")
                 email = os.getenv("EMAIL")
                 user_id = os.getenv("USER_ID")
                 if user_id:
@@ -66,7 +77,7 @@ class WorkerProcessor:
                     
                 send_queue = os.getenv("SEND_QUEUE")
                 
-            userdata = self.get_userdata(user_id, email, send_queue, message_group)
+            #userdata = self.get_userdata(user_id, email, send_queue, message_group)
                 
             # cria pasta para o arquivo zip        
             hash_id = str(uuid.uuid4()).replace('-', '')[:9]
@@ -86,17 +97,21 @@ class WorkerProcessor:
                 self.logger_service.error(msg)
                 return False, msg
             
-            nf_service = NotaFiscalService()
-                
-            result = nf_service.unzip_file_and_process(userdata, s3_path, zip_name, download_path, tipo,
-                                                        transaction_id, request_origin, client_id)
+            # processa o arquivo zip
+            nf_service = NotaFiscalService()                
+            email_send = email_request if request_origin == 'ROBO' else email
+            result = nf_service.unzip_file_and_process(s3_path, zip_name, download_path, tipo,
+                send_queue, user_id, message_group, email_send, transaction_id, request_origin, client_id)
+            
+            # verifica erros
             status = result["status"]
             erros = result["erros"]        
             if not status and erros:
                 email_service = EmailService()
                 error_str = email_service.get_flat_html_from_list(erros)
                 if not DEBUG:
-                    sucesso, code, msg = email_service.send_error(email, error_str, zip_name, transaction_id)
+                    email_send = email_request if request_origin == 'ROBO' else email
+                    sucesso, code, msg = email_service.send_error(email_send, error_str, zip_name, transaction_id)
                     if not sucesso:
                         error_str = f"{msg}\n{code}"
                         return False, error_str                        
@@ -128,25 +143,25 @@ class WorkerProcessor:
         finally:
             self.logger_service.info("<<<--- PROCESSOR FINALIZADO --->>>")
 
-    def get_userdata(self, user_id: int, email: str, send_queue: bool, message_group: str):
-        # mesmo padrao de estrutura da api
-        userdata = {
-            "email": email,
-            "user": [
-                user_id,
-                email,
-                "password",
-                {
-                    "name": "User name",
-                    "clients": [],
-                    "send_queue": send_queue,
-                    "message_group": message_group
-                },
-                True,
-                "admin"
-            ]
-        }
-        return userdata            
+    # def get_userdata(self, user_id: int, email: str, send_queue: bool, message_group: str):
+    #     # mesmo padrao de estrutura da api
+    #     userdata = {
+    #         "email": email,
+    #         "user": [
+    #             user_id,
+    #             email,
+    #             "password",
+    #             {
+    #                 "name": "User name",
+    #                 "clients": [],
+    #                 "send_queue": send_queue,
+    #                 "message_group": message_group
+    #             },
+    #             True,
+    #             "admin"
+    #         ]
+    #     }
+    #     return userdata            
 
 if __name__ == "__main__":
     worker = WorkerProcessor()

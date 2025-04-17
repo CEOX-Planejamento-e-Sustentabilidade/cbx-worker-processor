@@ -48,7 +48,7 @@ class NotaFiscalProcessorService:
               full_path_zip_filename: str, 
               folder_extract_zip: str,              
               selected_client: str,
-              user_email: str,
+              email: str,
               message_group_id: str,
               user_id: int):
         self.request_origin = request_origin
@@ -57,7 +57,7 @@ class NotaFiscalProcessorService:
         self.zip_name = zip_name
         self.full_path_zip_filename = full_path_zip_filename
         self.folder_extract_zip = folder_extract_zip
-        self.user_email = user_email
+        self.email = email
         self.selected_client = selected_client
         self.message_group_id = message_group_id
         self.user_id = user_id        
@@ -438,7 +438,7 @@ class NotaFiscalProcessorService:
         self.track_log(
             f"Enviando dados para a fila - Transaction Id: {self.transaction_id} "
             f"Tipo: {self.get_tipo_str(self.tipo)} "
-            f"Email: {self.user_email} "
+            f"Email: {self.email} "
             f"Url Chaves: {txt_url if txt_url else 'no url'} "
             f"Cliente Id: {self.selected_client} "
             f"Message Group Id: {self.message_group_id}")                    
@@ -448,7 +448,7 @@ class NotaFiscalProcessorService:
                                                     self.tipo,
                                                     self.transaction_id,
                                                     file_name,
-                                                    self.user_email, 
+                                                    self.email, 
                                                     txt_url, 
                                                     self.selected_client, 
                                                     self.message_group_id)
@@ -463,7 +463,7 @@ class NotaFiscalProcessorService:
         if DEBUG:
             return
         
-        self.track_log(f'Enviando e-mail do processamento do arquivo ZIP {self.zip_name} para {self.user_email}')
+        self.track_log(f'Enviando e-mail do processamento do arquivo ZIP {self.zip_name} para {self.email}')
         # pega o tipo
         tipo_str = self.get_tipo_str(self.tipo)
         if not self.ok:
@@ -480,10 +480,10 @@ class NotaFiscalProcessorService:
                 self.transaction_id,
                 '')
             subject = self.nf_email_service.get_subject_processing(tipo_str, self.zip_name, self.request_origin)
-            
-        sucesso, code, msg = self.nf_email_service.send_email(self.user_email, self.zip_name, body_html, body_text, subject)
+        
+        sucesso, code, msg = self.nf_email_service.send_email(self.email, self.zip_name, body_html, body_text, subject)
         if sucesso:
-            self.track_log(f'Email enviado para {self.user_email}')
+            self.track_log(f'Email enviado para {self.email}')
             return True
         else:
             self.track_monitoring(msg)
@@ -532,8 +532,8 @@ class NotaFiscalProcessorService:
         # envia e-mail do input (zip) e ouptut (excel) para o usuário
         body_html, body_text = self.nf_email_service.get_body_log(self.transaction_id, self.get_logs(), self.get_errors())
         subject = self.nf_email_service.get_subject_log(tipo_str, self.zip_name, self.request_origin)
-            
-        sucesso, code, msg = self.nf_email_service.send_email(self.user_email, self.zip_name, body_html, body_text, subject)
+        
+        sucesso, code, msg = self.nf_email_service.send_email(self.email, self.zip_name, body_html, body_text, subject)
         self.track_log(msg)
         if not sucesso:
             self.track_error(msg)

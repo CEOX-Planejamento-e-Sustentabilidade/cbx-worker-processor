@@ -8,8 +8,8 @@ class NotaFiscalService:
     def __init__(self):
         pass
     
-    def unzip_file_and_process(self, userdata, s3_path_zip, zip_name, full_path_zip_filename, tipo, 
-                               transaction_id, request_origin, selected_client=0):        
+    def unzip_file_and_process(self, s3_path_zip, zip_name, full_path_zip_filename, tipo, send_queue,
+                               user_id, message_group, email, transaction_id, request_origin, selected_client=0):        
         nf_processor = NotaFiscalProcessorService()
         try:
             folder_extract_zip = join(os.path.dirname(full_path_zip_filename), 'extract')
@@ -21,9 +21,9 @@ class NotaFiscalService:
                             full_path_zip_filename, 
                             folder_extract_zip, 
                             selected_client, 
-                            str(userdata['email']), 
-                            userdata['user'][3]['message_group'], # message group para a fila - ex.: CBX
-                            int(userdata['user'][0])) # user id
+                            email, #str(userdata['email']), 
+                            message_group,# userdata['user'][3]['message_group'], # message group para a fila - ex.: CBX
+                            user_id) #int(userdata['user'][0])) # user id
             
             if tipo not in [1, 2, 5, 21, 22, 23]:
                 raise Exception("Tipo de processo inválido. Processo válidos: INSUMO, MILHO, CBIOS, DANFE, SEFAZ, CHAVES")
@@ -70,9 +70,8 @@ class NotaFiscalService:
             nf_processor.send_email_process(input_url, output_url)
             
             # gera txt com as chaves e envia para fila
-            if tipo in [21, 22, 23]:
-                send = userdata['user'][3]['send_queue'] if 'send_queue' in userdata['user'][3] else False
-                if send:
+            if tipo in [21, 22, 23]:                
+                if send_queue:
                     txt_url = nf_processor.generate_txt_chaves_s3(df, key_nf_column)
                     nf_processor.send_to_queue_robo(txt_url)
                 

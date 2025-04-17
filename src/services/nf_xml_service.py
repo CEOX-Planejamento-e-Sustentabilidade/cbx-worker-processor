@@ -660,7 +660,7 @@ class NotaFiscalXmlService:
         df1 = df1.drop_duplicates(subset=['key_nf']).reset_index(drop=True)
         
         if df1.empty:
-            erros.append('Falha ao extrair dados dos XMLs')
+            erros.append('Falha ao extrair dados dos XMLs DataFrame vazio')
             return erros, 0, len(erros), 0, 0
                 
         try:
@@ -686,21 +686,7 @@ class NotaFiscalXmlService:
                 # Filtra os DataFrames eliminando as chaves existentes no BD
                 df1_final = df1[~df1['key_nf'].isin(chaves_set)]
                 df2_final = df2[~df2['key_nf'].isin(chaves_set)]
-                
-                # # get all keys that are in database from the keys_nf
-                #where = f" where {format_in('key_nf', keys_nf, True)}"
-                #keys_nf_bd = con.execute(f"select key_nf from cbx.nf {where}").all()
-
-                # df_key_nf = pd.DataFrame(keys_nf, columns=['key_nf'])
-                # df_key_nf_bd = pd.DataFrame(keys_nf_bd, columns=['key_nf'])
-                
-                # # get just the key_nfs that are not in the database
-                # df_keys_bulk = df_key_nf[~df_key_nf['key_nf'].isin(df_key_nf_bd['key_nf'])]
-                
-                # filter df1 and df2 to keep rows where 'key_nf' is in df_keys_bulk['key_nf']
-                # df1_final = df1[df1['key_nf'].isin(df_keys_bulk['key_nf'])]
-                # df2_final = df2[df2['key_nf'].isin(df_keys_bulk['key_nf'])]
-                
+                                
                 # deleta todas as chaves da nf view que vão ser inseridas 
                 if not df2_final.empty:
                     try:
