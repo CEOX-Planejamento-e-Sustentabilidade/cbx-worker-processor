@@ -411,8 +411,11 @@ class NotaFiscalProcessorService:
     
     # 8.generate and uploading txt file with keys nf
     def generate_txt_chaves_s3(self, df, column_key_nf: str = 'key_nf'):
-        if not self.ok:
-            return
+        #if not self.ok:
+        #    return        
+        if df is None or df.empty:
+            self.track_monitoring(f'Arquivo TXT não gerado, lista NFs consolidadas não foi gerada. DataFrame vazio.')
+            return        
         
         self.track_log(f'Gerando e Uploading TXT Chaves no S3')
         df = df[[column_key_nf]].reset_index(drop=True)
@@ -426,20 +429,21 @@ class NotaFiscalProcessorService:
         return txt_url
     
     # 9. send to SQS
-    def send_to_queue_robo(self, txt_url):
-        if not self.ok:
-            return
-        if not txt_url:
-            self.track_log('Txt das chaves não gerado')
-            self.ok = False
-            return
+    def send_to_queue_robo(self, txt_url, txt_all_url):
+        #if not self.ok:
+        #    return
+        #if not txt_url:
+        #    self.track_log('Txt das chaves não gerado')
+        #    self.ok = False
+        #    return        
         
         # Envia para fila SQS (transaction_id, email, url_s3_txt_key_nf, client_id, group id)
         self.track_log(
             f"Enviando dados para a fila - Transaction Id: {self.transaction_id} "
             f"Tipo: {self.get_tipo_str(self.tipo)} "
             f"Email: {self.email} "
-            f"Url Chaves: {txt_url if txt_url else 'no url'} "
+            f"Url Total de Chaves: {txt_all_url if txt_all_url else 'no url'} "
+            f"Url Chaves para processar: {txt_url if txt_url else 'no url'} "
             f"Cliente Id: {self.selected_client} "
             f"Message Group Id: {self.message_group_id}")                    
         
@@ -449,7 +453,8 @@ class NotaFiscalProcessorService:
                                                     self.transaction_id,
                                                     file_name,
                                                     self.email, 
-                                                    txt_url, 
+                                                    txt_url,
+                                                    txt_all_url, 
                                                     self.selected_client, 
                                                     self.message_group_id)
         if status:

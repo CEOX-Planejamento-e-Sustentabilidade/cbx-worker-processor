@@ -54,8 +54,8 @@ class NotaFiscalService:
             key_nf_column = nf_processor.get_key_col(tipo)
             if tipo in [21, 22, 23]:
                 df_sync = nf_processor.sync_key_nf(df, key_nf_column)
-                df = nf_processor.filter_by_df_sync(df, df_sync, key_nf_column)                
-            
+                df = nf_processor.filter_by_df_sync(df, df_sync, key_nf_column)
+                       
             # upa zip s3 
             #s3_path_zip = nf_processor.upload_zip_s3()
             
@@ -73,7 +73,8 @@ class NotaFiscalService:
             if tipo in [21, 22, 23]:                
                 if send_queue:
                     txt_url = nf_processor.generate_txt_chaves_s3(df, key_nf_column)
-                    nf_processor.send_to_queue_robo(txt_url)
+                    txt_all_url = nf_processor.generate_txt_chaves_s3(df_output, key_nf_column)
+                    nf_processor.send_to_queue_robo(txt_url, txt_all_url)
                 
                 if tipo == 22:
                     nf_processor.salvar_sefaz(df)

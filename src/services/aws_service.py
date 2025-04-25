@@ -83,7 +83,7 @@ class AwsService:
 
         return presigned_url, error
     
-    def send_message_robo(self, url, tipo, transaction_id, file_name, email, url_s3_txt_key_nf, client_id, message_group_id):
+    def send_message_robo(self, url, tipo, transaction_id, file_name, email, txt_url, txt_all_url, client_id, message_group_id):
         error: str = ''
         try:
             sqs = self.sign_sqs()
@@ -95,7 +95,8 @@ class AwsService:
                 'file_name': file_name,
                 'tipo': tipo, #tipo (21=DANFE, 22=SEFAZ)
                 'email': email,
-                'txt_url': url_s3_txt_key_nf,
+                'txt_all_url': txt_all_url if txt_all_url else '',
+                'txt_url': txt_url if txt_url else '',
                 'client_id': client_id
             }        
 
