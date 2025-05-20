@@ -4,10 +4,12 @@ import pandas as pd
 import re
 from pathlib import Path
 from configs import *
+from services.chaves_expression_service import ChavesExpressionService
 
 class DanfeService:
     def __init__(self):
-        pass
+        self.chaves_expr_service = ChavesExpressionService()
+        self.chaves_patterns = self.chaves_expr_service.get_patterns()
 
     def processar_danfes(self, folder_zip_extracted, full_path_zip_filename):
         try:
@@ -155,20 +157,27 @@ class DanfeService:
 
                 # Extrair chave de acesso
                                         
-                # ex.: 2522 0141 0807 2200 0504 5500 1000 1671 7010 4643 5774
-                chave_acesso_pattern = re.compile(r'\d{4} \d{4} \d{4} \d{4} \d{4} \d{4} \d{4} \d{4} \d{4} \d{4} \d{4}')
-                chave_acesso_match = chave_acesso_pattern.search(text)
-                chave_acesso = chave_acesso_match.group() if chave_acesso_match else None            
-                if not chave_acesso:
-                    # ex.: 25220141080722000504550010001671701046435774
-                    chave_acesso_pattern = re.compile(r'\d{44}')
-                    chave_acesso_match = chave_acesso_pattern.search(text)
-                    chave_acesso = chave_acesso_match.group() if chave_acesso_match else None
-                if not chave_acesso:
-                    # ex.: 25-2201-41.080.722/0005-04-55-001-000.167.170-104.643.577-4
-                    chave_acesso_pattern = re.compile(r'(\d{2})[-](\d{4})[-](\d{2})[.](\d{3})[.](\d{3})[/](\d{4})[-](\d{2})[-](\d{2})[-](\d{3})[-](\d{3})[.](\d{3})[.](\d{3})[-](\d{3})[.](\d{3})[.](\d{3})[-](\d{1})')
-                    chave_acesso_match = chave_acesso_pattern.search(text)
-                    chave_acesso = chave_acesso_match.group() if chave_acesso_match else None
+                # # ex.: 2522 0141 0807 2200 0504 5500 1000 1671 7010 4643 5774
+                # chave_acesso_pattern = re.compile(r'\d{4} \d{4} \d{4} \d{4} \d{4} \d{4} \d{4} \d{4} \d{4} \d{4} \d{4}')
+                # chave_acesso_match = chave_acesso_pattern.search(text)
+                # chave_acesso = chave_acesso_match.group() if chave_acesso_match else None            
+                # if not chave_acesso:
+                #     # ex.: 25220141080722000504550010001671701046435774
+                #     chave_acesso_pattern = re.compile(r'\d{44}')
+                #     chave_acesso_match = chave_acesso_pattern.search(text)
+                #     chave_acesso = chave_acesso_match.group() if chave_acesso_match else None
+                # if not chave_acesso:
+                #     # ex.: 25-2201-41.080.722/0005-04-55-001-000.167.170-104.643.577-4
+                #     chave_acesso_pattern = re.compile(r'(\d{2})[-](\d{4})[-](\d{2})[.](\d{3})[.](\d{3})[/](\d{4})[-](\d{2})[-](\d{2})[-](\d{3})[-](\d{3})[.](\d{3})[.](\d{3})[-](\d{3})[.](\d{3})[.](\d{3})[-](\d{1})')
+                #     chave_acesso_match = chave_acesso_pattern.search(text)
+                #     chave_acesso = chave_acesso_match.group() if chave_acesso_match else None
+                # if not chave_acesso:                           
+                #     # ex.: 5124.0103.9460.6700.1850.5501.8000.0026.4118.8198.3752
+                #     chave_acesso_pattern = re.compile(r'(\d{4}\.){10}\d{4}')
+                #     chave_acesso_match = chave_acesso_pattern.search(text)
+                #     chave_acesso = chave_acesso_match.group() if chave_acesso_match else None
+                
+                chave_acesso = self.chaves_expr_service.match_any_pattern(text, self.chaves_patterns)
                 
                 # Remove all non-numeric characters
                 if chave_acesso:
@@ -205,4 +214,4 @@ class DanfeService:
 
         except:
             traceback.format_exc()
-            return None, None, "erro ao processar arquivo", None, None, None, None, None, None, None
+            return None, None, "erro ao processar arquivo", None, None, None, None, None, None, None        

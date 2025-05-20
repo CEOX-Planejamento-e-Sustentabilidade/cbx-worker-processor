@@ -1,10 +1,7 @@
-import json
 import shutil
 import uuid
 
 from pathlib import Path
-
-import jwt
 from configs import *
 from services.aws_service import AwsService
 from services.email_service import EmailService
@@ -34,12 +31,13 @@ class WorkerProcessor:
                 #send_queue = userdata['user'][3]['send_queue'] if 'send_queue' in userdata['user'][3] else False
                 #message_group = userdata['user'][3]['message_group'] if 'message_group' in userdata['user'][3] else 'NO_MSG_GROUP'
                 
-                transaction_id = '4f3f8a5b-a8ec-493f-87ff-144205ee12r4'
-                zip_name = 'XMLs-ba40b6951'
-                tipo = 1
+                transaction_id = '4f3f8a5b-a8ec-493f-87ff-144205ee12r4'                
+                tipo = 21 # 1: insumos, 2: milho, 5: cbios, 21: danfe, 22: sefaz, 23: chaves
                 email = 'edzatarin@gmail.com'
                 email_request = 'edzatarin@gmail.com'
-                s3_path = 'input/XMLs-ba40b6951.zip'
+                zip_name = 'NF 3498'
+                #s3_path = 'input/Relatórios e NF-e Fertilizantes (2)-19e83c659.zip'
+                s3_path = 'input/NF 3498-b927eedbc.zip'
                 client_id = 1
                 message_group = 'CBX'
                 user_id = 139
@@ -76,9 +74,7 @@ class WorkerProcessor:
                     return False, "User ID não informado"
                     
                 send_queue = os.getenv("SEND_QUEUE")
-                
-            #userdata = self.get_userdata(user_id, email, send_queue, message_group)
-                
+                               
             # cria pasta para o arquivo zip        
             hash_id = str(uuid.uuid4()).replace('-', '')[:9]
             folder = join(ROOT_DOWNLOAD_FOLDER, zip_name, hash_id)
@@ -142,26 +138,6 @@ class WorkerProcessor:
             return False, msg
         finally:
             self.logger_service.info("<<<--- PROCESSOR FINALIZADO --->>>")
-
-    # def get_userdata(self, user_id: int, email: str, send_queue: bool, message_group: str):
-    #     # mesmo padrao de estrutura da api
-    #     userdata = {
-    #         "email": email,
-    #         "user": [
-    #             user_id,
-    #             email,
-    #             "password",
-    #             {
-    #                 "name": "User name",
-    #                 "clients": [],
-    #                 "send_queue": send_queue,
-    #                 "message_group": message_group
-    #             },
-    #             True,
-    #             "admin"
-    #         ]
-    #     }
-    #     return userdata            
 
 if __name__ == "__main__":
     worker = WorkerProcessor()

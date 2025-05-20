@@ -425,7 +425,7 @@ class NotaFiscalProcessorService:
             self.track_monitoring('Necessário processar o arquivo zip novamente')
             self.ok = False
         else:
-            self.track_log(f'Url S3 TXT: {txt_url}')
+            self.track_log(f'Url S3 TXT {len(df)} chaves: {txt_url}')
         return txt_url
     
     # 9. send to SQS
