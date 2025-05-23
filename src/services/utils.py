@@ -1,3 +1,4 @@
+import re
 from sqlalchemy import create_engine
 from configs import *
 from psycopg2 import connect
@@ -29,3 +30,7 @@ def is_number(value):
         return True
     except ValueError:
         return False
+    
+def contem_hora(texto: str) -> bool:
+    padrao = re.compile(r'\b([01]?\d|2[0-3]):[0-5]\d:[0-5]\d\b')
+    return bool(padrao.search(texto))    

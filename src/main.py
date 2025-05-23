@@ -24,6 +24,9 @@ class WorkerProcessor:
             # envia os arquivos processados para o S3
             # envia email com os links dos arquivos processados
             
+            folder = ''
+            download_path = ''            
+            
             if DEBUG:
                 #json_user = json.loads('{"auth": true, "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImVkemF0YXJpbkBnbWFpbC5jb20iLCJ1c2VyIjpbMTMzLCJoZWxkZXJAY2J4c3VzdGVudGFiaWxpZGFkZS5jb20uYnIiLCIwMzUxYTMyYzc0MTU1ZDRkZTcxOGYyYWYwYTU5ZmY3N2M1MGExODIwYjk4OTZiYmQ0ZjMyYzMxYWQ1YTkwODQyIix7Im5hbWUiOiJIZWxkZXIgQ2FzdHJvIiwiY2xpZW50cyI6WzMsMiwxLDcsMTJdLCJzZW5kX3F1ZXVlIjp0cnVlLCJtZXNzYWdlX2dyb3VwIjoiQ0JYIn0sdHJ1ZSwiYW5hbGlzdGEiXX0.VyaUdL6cIJWOlEYdaR2n8c9VhIpu4wmAkij3_KDuocI", "role": "analista", "clients": [3, 2, 1, 7, 12]}')
                 #token = f'Bearer {json_user["token"]}'
@@ -117,7 +120,7 @@ class WorkerProcessor:
                 return True, 'Sucesso! Não há erros'
         except Exception as ex:
             return False, str(ex)
-        finally:            
+        finally:
             if folder and os.path.exists(folder):
                 shutil.rmtree(folder) 
 

@@ -9,6 +9,7 @@ from services.aws_service import AwsService
 from sqlalchemy import text
 
 from services.file_process_log_service import FileProcessLogService
+from services.ie_interesse_service import IeInteresseService
 from services.nf_chave_service import NotaFiscalChaveService
 from services.nf_email_service import NotaFiscalEmailService
 from services.nf_excel_service import NotaFiscalExcelService
@@ -262,11 +263,53 @@ class NotaFiscalProcessorService:
             self.ok = False
         else:
             if df.empty:
-                self.track_log("Sem Chaves para processar.")
+                self.track_log("Sem Chaves para sincronizar.")
                 self.ok = False
             else:                
                 self.track_log(f'Chaves Sincronizadas. Total Chaves: {str(total_antes)} - Sincronizadas: {len(df)}')
         return df
+    
+    def sync_ie_interesse_sefaz(self, df):
+        if DEBUG:
+            return df
+        if not self.ok:
+            self.track_monitoring(f'Não foi possível filtrar as IEs de Interesse, lista NFs consolidadas não foi gerada.')
+            return df
+        if not self.tipo in [22,24]:
+            self.track_monitoring(f'Tipo errado para filtrar IEs de Interesse. Necessário tipo 22 ou 24. Tipo: {self.tipo}')
+            return df
+            
+        # validar chaves banco de dados (somente chaves não processadas)
+        self.track_log(f'Filtrando as IEs de Interesse no banco de dados')
+        total_antes = len(df)
+        ie_interesse_service = IeInteresseService()
+                
+        tipo_notax = 0 if self.tipo == 22 else 1
+        column_iex = 'IE_EMISSOR' if tipo_notax == 0 else 'IE_DESTINATARIO'
+        column_razao_socialx = 'NOME_RAZAO_SOCIAL_EMISSOR' if tipo_notax == 0 else 'NOME_RAZAO_SOCIAL_DESTINATARIO'
+        column_cpf_cnpjx = 'CNPJ_CPF_EMISSOR' if tipo_notax == 0 else 'CNPJ_CPF_DESTINATARIO'
+        column_municipiox = ''
+        column_ufx = 'UF_EMISSOR' if tipo_notax == 0 else 'UF_DESTINATARIO'
+
+        df, error = ie_interesse_service.sync_ie_interesse(df,
+                                                           tipo_nota=tipo_notax,
+                                                           column_ie=column_iex,
+                                                           column_razao_social=column_razao_socialx,
+                                                           column_cpf_cnpj=column_cpf_cnpjx,
+                                                           column_municipio=column_municipiox,
+                                                           column_uf=column_ufx,
+                                                           client_id=self.selected_client)
+        if error:
+            self.track_monitoring(error)
+            self.ok = False
+        else:
+            if df.empty:
+                self.track_log("Sem IEs de interesse para sincronizar.")
+                self.ok = False
+            else:                
+                self.track_log(f'NFs filtradas pelas IEs de Interesse. Total NFs: {str(total_antes)} - Filtradas: {len(df)}')
+        return df
+    
 
     # 4. filtrar somente nfs sincronizadas
     def filter_by_df_sync(self, df, df_sync, column_key_nf: str = 'key_nf'):

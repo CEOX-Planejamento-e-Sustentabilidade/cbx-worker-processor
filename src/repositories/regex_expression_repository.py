@@ -1,19 +1,19 @@
 from typing import List, TypeVar
-from domain.chaves_expression import ChavesExpression
-from interfaces.chaves_expression_repository_interface import IChavesExpressionRepository
+from domain.regex_expression import RegexExpression
+from interfaces.regex_expression_repository_interface import IRegexExpressionRepository
 from repositories.base_repository import BaseRepository
 from sqlalchemy import select, update, text, exc
 
 T = TypeVar('T')
 
-class ChavesExpressionRepository(BaseRepository, IChavesExpressionRepository):
+class RegexExpressionRepository(BaseRepository, IRegexExpressionRepository):
     def __init__(self):        
-        super().__init__(ChavesExpression)
+        super().__init__(RegexExpression)
             
-    def get_all_active(self) -> List[ChavesExpression]:
+    def get_all_active(self) -> List[RegexExpression]:
         with self.SessionSync() as session:
             try:
-                stmt = select(ChavesExpression).where(ChavesExpression.ativo == True)
+                stmt = select(RegexExpression).where(RegexExpression.ativo == True)
                 result = session.execute(stmt).scalars().all()
                 return result
             except exc.SQLAlchemyError as ex:

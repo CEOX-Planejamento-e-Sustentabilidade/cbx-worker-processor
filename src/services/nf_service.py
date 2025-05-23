@@ -25,8 +25,8 @@ class NotaFiscalService:
                             message_group,# userdata['user'][3]['message_group'], # message group para a fila - ex.: CBX
                             user_id) #int(userdata['user'][0])) # user id
             
-            if tipo not in [1, 2, 5, 21, 22, 23]:
-                raise Exception("Tipo de processo inválido. Processo válidos: INSUMO, MILHO, CBIOS, DANFE, SEFAZ, CHAVES")
+            if tipo not in [1, 2, 5, 21, 22, 23, 24]:
+                raise Exception("Tipo de processo inválido. Processo válidos: INSUMO, MILHO, CBIOS, DANFE, SEFAZ ENTRADA, CHAVES, SEFAZ SAIDA")
             
             # inicia processamento
             nf_processor.start()
@@ -43,7 +43,7 @@ class NotaFiscalService:
                 df = nf_processor.processar_nfs_cbios()
             elif tipo == 21:
                 df = nf_processor.process_danfes()
-            elif tipo == 22:
+            elif tipo in [22, 24]: # 22 = entrada, 24 = saida
                 df = nf_processor.processar_sefaz()
             elif tipo == 23:
                 df = nf_processor.processar_chaves()
@@ -52,9 +52,11 @@ class NotaFiscalService:
             
             # define coluna chave nf
             key_nf_column = nf_processor.get_key_col(tipo)
-            if tipo in [21, 22, 23]:
+            if tipo in [21, 22, 23, 24]:
                 df_sync = nf_processor.sync_key_nf(df, key_nf_column)
                 df = nf_processor.filter_by_df_sync(df, df_sync, key_nf_column)
+                if tipo in [22, 24]:
+                    df = nf_processor.sync_ie_interesse_sefaz(df)
                        
             # upa zip s3 
             #s3_path_zip = nf_processor.upload_zip_s3()

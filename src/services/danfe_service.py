@@ -4,12 +4,16 @@ import pandas as pd
 import re
 from pathlib import Path
 from configs import *
-from services.chaves_expression_service import ChavesExpressionService
+from services.regex_expression_service import RegexExpressionService
 
 class DanfeService:
     def __init__(self):
-        self.chaves_expr_service = ChavesExpressionService()
-        self.chaves_patterns = self.chaves_expr_service.get_patterns()
+        self.regex_expr_service = RegexExpressionService()
+        expressions = self.regex_expr_service.get_all_active()
+        self.ie_tipo_patterns = self.regex_expr_service.get_pattern_by_alvo(expressions, self.regex_expr_service.alvo_nf_tipo)
+        self.chaves_patterns = self.regex_expr_service.get_pattern_by_alvo(expressions, self.regex_expr_service.alvo_nf_chave)
+        self.ie_emissor_patterns = self.regex_expr_service.get_pattern_by_alvo(expressions, self.regex_expr_service.alvo_nf_ie_emissor)
+        self.ie_destinatario_patterns = self.regex_expr_service.get_pattern_by_alvo(expressions, self.regex_expr_service.alvo_nf_ie_destinatario)
 
     def processar_danfes(self, folder_zip_extracted, full_path_zip_filename):
         try:
@@ -34,9 +38,9 @@ class DanfeService:
 
                         if _chave is not None:
                             _chave = _chave.replace(" ", "").strip()
-                            if len(_chave) == 44:
-                                _cpf_cnpj_emissor = _chave[6:20]
+                            if len(_chave) == 44:                                            
                                 _ano_mes_emissao = _chave[2:6]
+                                _cpf_cnpj_emissor = _chave[6:20]
                                 numeronf = _chave[25:34]
                                 
                             dados.append([_cpf_cnpj, _chave, _ie_destinatario, _ie_emissor, _cpf_cnpj_emissor,
@@ -45,7 +49,6 @@ class DanfeService:
                             erros.append(f'Chave nula para o arquivo {str(f)}: {_message}')
 
                     except Exception as ex:
-                        #traceback.print_exc()
                         erros.append(f'Erro no arquivo {str(f)}: {str(ex)}')
                 i += 1
             
@@ -101,8 +104,9 @@ class DanfeService:
                 text = page.extract_text()
 
                 # para debug, imprimir o TXT do PDF
-                with open(str(filename)+".txt", 'w', encoding='utf-8') as f:
-                    f.write(text)
+                if DEBUG:
+                    with open(str(filename)+".txt", 'w', encoding='utf-8') as f:
+                        f.write(text)
 
                 # Se não houver texto ou o texto extraído for muito curto
                 if not text or len(text.strip()) < 5:
@@ -113,105 +117,29 @@ class DanfeService:
                 numero_match = numero_pattern.search(text)
                 numero = numero_match.group(1) if numero_match else None
 
-                # Tente extrair inscrições
-                inscricoes_patterns = [
-                    re.compile(
-                        r'INSCRIÇÃO ESTADUAL INSCRIÇÃO MUNICIPAL INSCRIÇÃO ESTADUAL DO SUBST\. TRIBUT\. CNPJ\n+\s(0*\d+)'),
-                    re.compile(
-                        r'INSCRIÇÃO ESTADUAL INSCRIÇÃO MUNICIPAL INSCRIÇÃO ESTADUAL DO SUBST\. TRIBUT\. CNPJ\n+\s(0*\d+)'),
-                    re.compile(
-                        r'INSCRIÇÃO ESTADUAL INSCRIÇÃO ESTADUAL DO SUBSTITUTO TRIBUTÁRIO CNPJ\n+\s(0*\d+)'),
-                    re.compile(
-                        r'INSCRICAO ESTADUAL INSCRICAO ESTADUAL DO SUBST. TRIBUT. CNPJ\n+\s(0*\d+)'),
-                    re.compile(
-                        r'INSCRIÇÃO ESTADUAL INSCRIÇÃO ESTADUAL DO SUBST. TRIBUT. CNPJ\n+\s(0*\d+)'),
-                    re.compile(
-                        r'INSCRIÇÃO ESTADUAL INSCRIÇÃO ESTADUAL DO SUBSTITUTO TRIBUTÁRIO CNPJ / CPF\n+\s(0*\d+)'),
-                    re.compile(
-                        r"INSCRIÇÃO ESTADUAL[^\d]+(\d{6,})")
-                ]
-                ie_emissor = None
-                for pattern in inscricoes_patterns:
-                    inscricoes_match = pattern.search(text)
-                    if inscricoes_match:
-                        ie_emissor = inscricoes_match.group(1).split()
-                        break
+                tipo = self.regex_expr_service.get_after_group(text, self.ie_tipo_patterns)                
+                chave_acesso = self.regex_expr_service.get_group(text, self.chaves_patterns)
+                ie_emissor = self.regex_expr_service.get_after_group(text, self.ie_emissor_patterns)
+                ie_destinatario = self.regex_expr_service.get_after_group_last_value(text, self.ie_destinatario_patterns)
 
-                # Tente extrair informações do destinatário
-                destinatario_patterns = [
-                    re.compile(
-                        r'NOME / RAZÃO SOCIAL CNPJ / CPF DATA DA EMISSÃO\n(.+?)\s(\d{3}\.\d{3}\.\d{3}-\d{2})\s(\d{2}/\d{2}/\d{4})'),
-                    re.compile(
-                        r'NOME / RAZAO SOCIAL CNPJ / CPF DATA DA EMISSAO\n(.+?)\s(\d{3}\.\d{3}\.\d{3}-\d{2})\s(\d{2}/\d{2}/\d{4})'),
-                    re.compile(
-                        r'NOME / RAZAO SOCIAL CNPJ / CPF DATA DA EMISSAO\n(.+?)\s(\d{3}\.\d{3}\.\d{3}-\d{2})\s(\d{2}/\d{2}/\d{4})'),
-                    re.compile(
-                        r'NOME / RAZÃO SOCIAL CNPJ / CPF DATA DA EMISSÃO\n(.+?)\s(\d{3}\.\d{3}\.\d{3}-\d{2})\s(\d{2}/\d{2}/\d{4})')
-                ]
-                destinatario_nome = destinatario_cpf = destinatario_data_emissao = None
-                for pattern in destinatario_patterns:
-                    destinatario_match = pattern.search(text)
-                    if destinatario_match:
-                        destinatario_nome, destinatario_cpf, destinatario_data_emissao = destinatario_match.groups()
-                        break
-
-                # Extrair chave de acesso
-                                        
-                # # ex.: 2522 0141 0807 2200 0504 5500 1000 1671 7010 4643 5774
-                # chave_acesso_pattern = re.compile(r'\d{4} \d{4} \d{4} \d{4} \d{4} \d{4} \d{4} \d{4} \d{4} \d{4} \d{4}')
-                # chave_acesso_match = chave_acesso_pattern.search(text)
-                # chave_acesso = chave_acesso_match.group() if chave_acesso_match else None            
-                # if not chave_acesso:
-                #     # ex.: 25220141080722000504550010001671701046435774
-                #     chave_acesso_pattern = re.compile(r'\d{44}')
-                #     chave_acesso_match = chave_acesso_pattern.search(text)
-                #     chave_acesso = chave_acesso_match.group() if chave_acesso_match else None
-                # if not chave_acesso:
-                #     # ex.: 25-2201-41.080.722/0005-04-55-001-000.167.170-104.643.577-4
-                #     chave_acesso_pattern = re.compile(r'(\d{2})[-](\d{4})[-](\d{2})[.](\d{3})[.](\d{3})[/](\d{4})[-](\d{2})[-](\d{2})[-](\d{3})[-](\d{3})[.](\d{3})[.](\d{3})[-](\d{3})[.](\d{3})[.](\d{3})[-](\d{1})')
-                #     chave_acesso_match = chave_acesso_pattern.search(text)
-                #     chave_acesso = chave_acesso_match.group() if chave_acesso_match else None
-                # if not chave_acesso:                           
-                #     # ex.: 5124.0103.9460.6700.1850.5501.8000.0026.4118.8198.3752
-                #     chave_acesso_pattern = re.compile(r'(\d{4}\.){10}\d{4}')
-                #     chave_acesso_match = chave_acesso_pattern.search(text)
-                #     chave_acesso = chave_acesso_match.group() if chave_acesso_match else None
+                destinatario_nome = destinatario_cpf = destinatario_data_emissao = ''
                 
-                chave_acesso = self.chaves_expr_service.match_any_pattern(text, self.chaves_patterns)
+                if tipo:
+                    tipo = tipo.strip()
                 
                 # Remove all non-numeric characters
                 if chave_acesso:
                     chave_acesso = re.sub(r'\D', '', str(chave_acesso))
 
-                ies_emissor_patterns = [
-                    re.compile(r"MUNICÍPIO UF .+ INSCRIÇÃO ESTADUAL HORA DA SAÍDA.+\n.+\s(0*\d+)"),
-                    re.compile(r"MUNICÍPIO UF .+ INSCRIÇÃO ESTADUAL HORA DA SAÍDA\n.+\s(0*\d+)"),
-                    re.compile(r"MUNICIPIO .+ UF INSCRICAO ESTADUAL HORA DA SAIDA\n.+\s(0*\d+)"),
-                    re.compile(r"MUNICÍPIO UF TELEFONE / FAX INSCRIÇÃO ESTADUAL HORA DA SAÍDA\n.+\s(0*\d+)"),
-                    # r"ENDERECO MUNICIPIO UF INSCRICAO ESTADUAL\n.+\s(0*\d+)"
-                    re.compile(r"INSCRIÇÃO ESTADUAL\s+(\d{9,})\s+\d{2}:\d{2}:\d{2}")
-                ]
-
-                inscricoes = None
-                for pattern_str in ies_emissor_patterns:
-                    padrao_chave_match = pattern.search(text)
-                    if padrao_chave_match:
-                        inscricoes = padrao_chave_match.group(1).split()
-                        break
-
                 if DEBUG:
                     print("Número:", numero)
-                    print("Inscrições:", inscricoes)
+                    print("Inscrições Dest.:", ie_destinatario)
                     print("Destinatário Nome:", destinatario_nome)
                     print("Destinatário CPF:", destinatario_cpf)
                     print("Destinatário Data de Emissão:", destinatario_data_emissao)
                     print("IE Emissor", ie_emissor)
                     print("Chave de acesso", chave_acesso)
 
-                tipo = "regex"
-
-                return chave_acesso, destinatario_cpf, _message, _total_pages, inscricoes, ie_emissor, _cpf_cnpj_emissor, tipo, numero, destinatario_data_emissao
-
-        except:
-            traceback.format_exc()
-            return None, None, "erro ao processar arquivo", None, None, None, None, None, None, None        
+                return chave_acesso, destinatario_cpf, _message, _total_pages, ie_destinatario, ie_emissor, _cpf_cnpj_emissor, tipo, numero, destinatario_data_emissao
+        except Exception as ex:
+            raise ex
