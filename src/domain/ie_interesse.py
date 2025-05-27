@@ -9,7 +9,6 @@ class IeInteresse(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)    
     ie_value = Column(Integer, nullable=False)
-    tipo = Column(Integer, nullable=False)
     razao_social = Column(String, nullable=False)
     cpf_cnpj = Column(String, nullable=False)
     municipio = Column(String, nullable=False)

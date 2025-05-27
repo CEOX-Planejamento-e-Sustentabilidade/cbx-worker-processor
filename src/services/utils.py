@@ -33,4 +33,8 @@ def is_number(value):
     
 def contem_hora(texto: str) -> bool:
     padrao = re.compile(r'\b([01]?\d|2[0-3]):[0-5]\d:[0-5]\d\b')
-    return bool(padrao.search(texto))    
+    return bool(padrao.search(texto))
+
+def format_title(texto: str, valor: str, show_type: bool = True, tamanho: int = 15, pos: str = ':') -> str:
+    result = f"{texto.ljust(tamanho)}{pos} {valor} {type(valor) if show_type else ''}".strip()
+    return result

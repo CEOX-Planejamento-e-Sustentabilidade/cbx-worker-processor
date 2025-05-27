@@ -255,7 +255,7 @@ class NotaFiscalProcessorService:
             self.track_monitoring(f'Não foi possível sincronizar chaves, lista NFs consolidadas não foi gerada.')
             return df
         # validar chaves banco de dados (somente chaves não processadas)
-        self.track_log(f'Sincronizando Chaves no banco de dados')
+        self.track_log(f'Sincronizando Chaves no banco de dados (somente chaves não processadas)')
         total_antes = len(df)
         df, error = self.robo_chaves_service.sync_key_nf(self.transaction_id, df, column_key_nf)
         if error:
@@ -270,13 +270,13 @@ class NotaFiscalProcessorService:
         return df
     
     def sync_ie_interesse_sefaz(self, df):
-        if DEBUG:
-            return df
+        #if DEBUG:
+        #    return df
         if not self.ok:
             self.track_monitoring(f'Não foi possível filtrar as IEs de Interesse, lista NFs consolidadas não foi gerada.')
             return df
-        if not self.tipo in [22,24]:
-            self.track_monitoring(f'Tipo errado para filtrar IEs de Interesse. Necessário tipo 22 ou 24. Tipo: {self.tipo}')
+        if not self.tipo in [22]:
+            self.track_monitoring(f'Tipo errado para filtrar IEs de Interesse. Necessário tipo 22. Tipo: {self.tipo}')
             return df
             
         # validar chaves banco de dados (somente chaves não processadas)
@@ -284,30 +284,30 @@ class NotaFiscalProcessorService:
         total_antes = len(df)
         ie_interesse_service = IeInteresseService()
                 
-        tipo_notax = 0 if self.tipo == 22 else 1
-        column_iex = 'IE_EMISSOR' if tipo_notax == 0 else 'IE_DESTINATARIO'
-        column_razao_socialx = 'NOME_RAZAO_SOCIAL_EMISSOR' if tipo_notax == 0 else 'NOME_RAZAO_SOCIAL_DESTINATARIO'
-        column_cpf_cnpjx = 'CNPJ_CPF_EMISSOR' if tipo_notax == 0 else 'CNPJ_CPF_DESTINATARIO'
+        column_iex = 'IE_EMISSOR'
+        column_razao_socialx = 'NOME_RAZAO_SOCIAL_EMISSOR'
+        column_cpf_cnpjx = 'CNPJ_CPF_EMISSOR'
         column_municipiox = ''
-        column_ufx = 'UF_EMISSOR' if tipo_notax == 0 else 'UF_DESTINATARIO'
+        column_ufx = 'UF_EMISSOR'
 
-        df, error = ie_interesse_service.sync_ie_interesse(df,
-                                                           tipo_nota=tipo_notax,
-                                                           column_ie=column_iex,
-                                                           column_razao_social=column_razao_socialx,
-                                                           column_cpf_cnpj=column_cpf_cnpjx,
-                                                           column_municipio=column_municipiox,
-                                                           column_uf=column_ufx,
-                                                           client_id=self.selected_client)
+        df, novas_ies_interesse, error = ie_interesse_service.sync_ie_interesse(df,
+            column_ie=column_iex,
+            column_razao_social=column_razao_socialx,
+            column_cpf_cnpj=column_cpf_cnpjx,
+            column_municipio=column_municipiox,
+            column_uf=column_ufx,
+            client_id=self.selected_client)
         if error:
             self.track_monitoring(error)
             self.ok = False
         else:
             if df.empty:
-                self.track_log("Sem IEs de interesse para sincronizar.")
+                self.track_log("Não há IEs de Interesse para filtrar.")
                 self.ok = False
             else:                
                 self.track_log(f'NFs filtradas pelas IEs de Interesse. Total NFs: {str(total_antes)} - Filtradas: {len(df)}')
+                if novas_ies_interesse > 0:
+                    self.track_log(f'Adicionadas {novas_ies_interesse} novas IEs de Interesse no banco de dados')
         return df
     
 
@@ -352,9 +352,6 @@ class NotaFiscalProcessorService:
     
     # 5. upload excel to s3
     def upload_excel_nf_s3(self, df):
-        #if not self.ok:
-        #    self.track_monitoring(f'Arquivo Excel não gerado, lista NFs consolidadas não foi gerada.')
-        #    return
         if df is None or df.empty:
             self.track_monitoring(f'Arquivo Excel não gerado, lista NFs consolidadas não foi gerada. DataFrame vazio.')
             return
@@ -426,9 +423,6 @@ class NotaFiscalProcessorService:
     
     # 6. get input url
     def get_input_url(self, s3_path_zip: str, expires=3600):
-        #if not self.ok:
-        #    return
-        
         # obtem url zip S3 (input)
         self.track_log(f'Obtendo URL S3 Zip')
         input_url, error = self.aws_service.get_s3_url(s3_path_zip, expires)
@@ -440,9 +434,6 @@ class NotaFiscalProcessorService:
     
     # 7. get output url
     def get_output_url(self, s3_path_excel, expires=3600):
-        #if not self.ok:
-        #    return
-        
         # obtem url excel S3 (output)
         self.track_log(f'Obtendo URL S3 Excel')
         output_url, error = self.aws_service.get_s3_url(s3_path_excel, expires)
@@ -454,8 +445,6 @@ class NotaFiscalProcessorService:
     
     # 8.generate and uploading txt file with keys nf
     def generate_txt_chaves_s3(self, df, column_key_nf: str = 'key_nf'):
-        #if not self.ok:
-        #    return        
         if df is None or df.empty:
             self.track_monitoring(f'Arquivo TXT não gerado, lista NFs consolidadas não foi gerada. DataFrame vazio.')
             return        
@@ -471,14 +460,9 @@ class NotaFiscalProcessorService:
             self.track_log(f'Url S3 TXT {len(df)} chaves: {txt_url}')
         return txt_url
     
-    # 9. send to SQS
     def send_to_queue_robo(self, txt_url, txt_all_url):
-        #if not self.ok:
-        #    return
-        #if not txt_url:
-        #    self.track_log('Txt das chaves não gerado')
-        #    self.ok = False
-        #    return        
+        if DEBUG:
+            return
         
         # Envia para fila SQS (transaction_id, email, url_s3_txt_key_nf, client_id, group id)
         self.track_log(
@@ -555,10 +539,8 @@ class NotaFiscalProcessorService:
                                         self.selected_client)
         if error:
             self.track_monitoring(error)
-            return False
         else:
             self.track_log(f'Registro efetuado')
-            return True
     
     # 12. deleta chaves de controle
     def delete_keys_nf(self, transaction_id):        
@@ -612,7 +594,7 @@ class NotaFiscalProcessorService:
         status, msg = self.nf_excel_service.save_sefaz(df)
 
         if status:
-            self.track_log(f"Registrado SEFAZ no banco de dados")
+            self.track_log(f"SEFAZ registrado no banco de dados")
         else:
             self.track_monitoring(msg)
                                 

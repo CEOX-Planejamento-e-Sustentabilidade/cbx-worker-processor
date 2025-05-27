@@ -23,12 +23,11 @@ class IeInteresseRepository(BaseRepository, IIeInteresseRepository):
                 session.rollback()
                 raise ex
             
-    def get_all_not_elegible(self, tipo: int, ies: list) -> List[IeInteresse]:
+    def get_all_not_elegible(self, ies: list) -> List[IeInteresse]:
         with self.SessionSync() as session:
             try:
                 stmt = select(IeInteresse).where(
                     and_(IeInteresse.ativo == True,
-                         IeInteresse.tipo == tipo,
                          IeInteresse.ie_status == 'NAO INTERESSE'),
                          IeInteresse.ie_value.in_(ies))
                 result = session.execute(stmt).scalars().all()
