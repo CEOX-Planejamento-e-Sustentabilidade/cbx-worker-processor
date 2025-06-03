@@ -3,8 +3,8 @@ import os
 
 # Determine which environment we're in
 #ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')  # default to 'development'
-ENVIRONMENT = 'production'
-#ENVIRONMENT = 'development'
+#ENVIRONMENT = 'production'
+ENVIRONMENT = 'development'
 
 # Load the appropriate .env file
 if ENVIRONMENT == 'production':

@@ -19,6 +19,7 @@ from services.robo_chaves_service import RoboChavesService
         
 class NotaFiscalProcessorService:
     def __init__(self):
+        #self.DEBUG = False #DEBUG
         self.FOLDER_TEMP = "temp"
         self.FOLDER_INPUT = "input"
         self.FOLDER_PROCESS = "process"
@@ -249,8 +250,6 @@ class NotaFiscalProcessorService:
       
     # 3. sincroniza chaves no banco de dados para controle
     def sync_key_nf(self, df, column_key_nf: str = 'key_nf'):
-        if DEBUG:
-            return df
         if not self.ok:
             self.track_monitoring(f'Não foi possível sincronizar chaves, lista NFs consolidadas não foi gerada.')
             return df
@@ -270,8 +269,6 @@ class NotaFiscalProcessorService:
         return df
     
     def sync_ie_interesse_sefaz(self, df):
-        #if DEBUG:
-        #    return df
         if not self.ok:
             self.track_monitoring(f'Não foi possível filtrar as IEs de Interesse, lista NFs consolidadas não foi gerada.')
             return df
@@ -313,10 +310,8 @@ class NotaFiscalProcessorService:
 
     # 4. filtrar somente nfs sincronizadas
     def filter_by_df_sync(self, df, df_sync, column_key_nf: str = 'key_nf'):
-        if DEBUG:
-            return df     
         if not self.ok:
-            return df
+            return df_sync
         df = df[df[column_key_nf].isin(df_sync['key_nf'])]
         if df.empty:
             self.track_log("Sem Chaves para processar.")
@@ -445,12 +440,13 @@ class NotaFiscalProcessorService:
     
     # 8.generate and uploading txt file with keys nf
     def generate_txt_chaves_s3(self, df, column_key_nf: str = 'key_nf'):
-        if df is None or df.empty:
-            self.track_monitoring(f'Arquivo TXT não gerado, lista NFs consolidadas não foi gerada. DataFrame vazio.')
-            return        
+        #if df is None or df.empty:
+        #    self.track_monitoring(f'Arquivo TXT não gerado, lista NFs consolidadas não foi gerada. DataFrame vazio.')
+        #    return
         
         self.track_log(f'Gerando e Uploading TXT Chaves no S3')
-        df = df[[column_key_nf]].reset_index(drop=True)
+        if not df.empty:
+            df = df[[column_key_nf]].reset_index(drop=True)
         txt_url, error = self.aws_service.upload_csv_by_chunks([df], folder=self.FOLDER_PROCESS, expires=3600)
         if error:
             self.track_monitoring(error)
@@ -461,8 +457,8 @@ class NotaFiscalProcessorService:
         return txt_url
     
     def send_to_queue_robo(self, txt_url, txt_all_url):
-        if DEBUG:
-            return
+        #if self.DEBUG:
+        #    return
         
         # Envia para fila SQS (transaction_id, email, url_s3_txt_key_nf, client_id, group id)
         self.track_log(
@@ -491,10 +487,7 @@ class NotaFiscalProcessorService:
             self.track_monitoring(msg)
     
     # 10. envia e-mail do processamento
-    def send_email_process(self, input_url, output_url):
-        if DEBUG:
-            return
-        
+    def send_email_process(self, input_url, output_url):        
         self.track_log(f'Enviando e-mail do processamento do arquivo ZIP {self.zip_name} para {self.email}')
         # pega o tipo
         tipo_str = self.get_tipo_str(self.tipo)
@@ -554,7 +547,7 @@ class NotaFiscalProcessorService:
             
     # 13. send email completo do log
     def send_email_logs(self):
-        if DEBUG:
+        if self.DEBUG:
             return        
         # pega o tipo
         tipo_str = self.get_tipo_str(self.tipo)
