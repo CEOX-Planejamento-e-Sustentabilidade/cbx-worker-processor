@@ -64,6 +64,7 @@ class NotaFiscalProcessorService:
         self.message_group_id = message_group_id
         self.user_id = user_id        
         self.nf_logger_service.clear_monitoring()
+        self.nf_logger_service.set_transaction_id(transaction_id)
         
     def track_monitoring(self, msg: str):
         self.nf_logger_service.track_monitoring(msg)
@@ -583,7 +584,7 @@ class NotaFiscalProcessorService:
         if not self.ok:
             return
 
-        self.track_log("Registrando SEFAZ no banco de dados")
+        self.track_log("Registrando SEFAZ no banco de dados")        
         status, msg = self.nf_excel_service.save_sefaz(df)
 
         if status:

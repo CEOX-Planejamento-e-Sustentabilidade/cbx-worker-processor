@@ -1,3 +1,4 @@
+from datetime import datetime
 import shutil
 import uuid
 
@@ -85,11 +86,12 @@ class WorkerProcessor:
                 raw_send_queue = os.getenv("SEND_QUEUE")
                 send_queue = str(raw_send_queue).strip().lower() in ("true")
             
-            self.logger_service.info('-------------------')
-            self.logger_service.info('VALORES RECEBIDOS:')
-            self.logger_service.info('-------------------')
+            self.logger_service.set_transaction_id(transaction_id)
+            #self.logger_service.info('-------------------')
+            #self.logger_service.info('VALORES RECEBIDOS:')
+            #self.logger_service.info('-------------------')
             self.logger_service.info(format_title('transaction id', transaction_id))
-            self.logger_service.info(format_title('file name', zip_name))                
+            self.logger_service.info(format_title('file name', zip_name))
             self.logger_service.info(format_title('tipo', tipo))
             if email_request:
                 self.logger_service.info(format_title('email robo', email_request))
@@ -100,7 +102,7 @@ class WorkerProcessor:
             self.logger_service.info(format_title('user id', user_id))
             self.logger_service.info(format_title('send queue', send_queue) +" - "+ format_title('raw send queue', raw_send_queue) )
             self.logger_service.info(format_title('request origin', request_origin))
-            self.logger_service.info('-------------------')
+            #self.logger_service.info('-------------------')
                                                
             # cria pasta para o arquivo zip        
             hash_id = str(uuid.uuid4()).replace('-', '')[:9]
@@ -153,12 +155,13 @@ class WorkerProcessor:
 
             if download_path and os.path.exists(download_path):
                 os.remove(download_path) 
-    
+            
     def iniciar_worker(self):
         try:
+            self.logger_service.clear_transaction_id()
             self.logger_service.info("<<<--- INÍCIO PROCESSOR --->>>")
             self.logger_service.info("Modo DEBUG: " + str(self.DEBUG))
-            self.logger_service.info("ENVIRONMENT: " + ENVIRONMENT)            
+            self.logger_service.info("ENVIRONMENT: " + ENVIRONMENT)
             sucesso, msg = self.run()
             self.logger_service.info(msg)
             return sucesso, msg        
