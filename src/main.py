@@ -128,7 +128,7 @@ class WorkerProcessor:
             result = nf_service.unzip_file_and_process(s3_path, zip_name, download_path, tipo,
                 send_queue, user_id, message_group, email_send, transaction_id, request_origin, client_id)
             
-            return True, f'Arquivo {zip_name} processado com sucesso!'
+            return True, f'Fim do processamento do arquivo {zip_name}'
             
             # verifica erros
             # status = result["status"]
