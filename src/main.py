@@ -1,4 +1,3 @@
-from datetime import datetime
 import shutil
 import uuid
 
@@ -16,6 +15,7 @@ from services.utils import format_title
 class WorkerProcessor:
     def __init__(self):
         self.aws_service = AwsService()
+        #self.aws_service.check_credentials()
         self.file_service = FileService()
         self.logger_service = LoggerService()
         self.DEBUG = DEBUG
@@ -42,12 +42,13 @@ class WorkerProcessor:
                 tipo = 23 # 1: insumos, 2: milho, 5: cbios, 21: danfe, 22: sefaz, 23: chaves
                 email = 'edzatarin@gmail.com'
                 email_request = 'edzatarin@gmail.com'
-                zip_name = 'NF 3498'
+                zip_name = 'ROMEU_GUSATTI_OUT-DEZ'
                 #s3_path = 'input/Relatórios e NF-e Fertilizantes (2)-19e83c659.zip'
                 #s3_path = 'input/NF 3498-b927eedbc.zip'
                 #s3_path = 'input/sefaz - 13.243.389-3 - Saida.zip'
-                s3_path = 'input/Teste-31fef1863.zip'
-                client_id = 9 #grupo farias
+                #s3_path = 'input/Teste-31fef1863.zip'
+                s3_path = 'input/ROMEU_GUSATTI_OUT-DEZ-c2a38426a-0a6ea6b8d.zip'
+                client_id = 1 #grupo farias
                 message_group = 'CBX'
                 user_id = 139
                 raw_send_queue = 'True'
@@ -107,20 +108,22 @@ class WorkerProcessor:
             # cria pasta para o arquivo zip        
             hash_id = str(uuid.uuid4()).replace('-', '')[:9]
             folder = join(ROOT_DOWNLOAD_FOLDER, zip_name, hash_id)
-            sucesso, msg = self.file_service.create_folder(folder)
-            self.logger_service.info(msg)
+            sucesso, msg = self.file_service.create_folder(folder)            
             if not sucesso:
                 self.logger_service.error(msg)
                 return False, msg
+            else:
+                self.logger_service.info(msg)
                 
             # baixa arquivo zip do S3
             only_file_name = Path(s3_path).name
             download_path = join(folder, only_file_name)
-            sucesso, msg =self.aws_service.download(s3_path, download_path)
-            self.logger_service.info(msg)
+            sucesso, msg =self.aws_service.download(s3_path, download_path)            
             if not sucesso:
                 self.logger_service.error(msg)
                 return False, msg
+            else:
+                self.logger_service.info(msg)
             
             # processa o arquivo zip
             nf_service = NotaFiscalService()                
@@ -128,7 +131,7 @@ class WorkerProcessor:
             result = nf_service.unzip_file_and_process(s3_path, zip_name, download_path, tipo,
                 send_queue, user_id, message_group, email_send, transaction_id, request_origin, client_id)
             
-            return True, f'Arquivo {zip_name} processado com sucesso!'
+            return True, f'Fim do processamento do arquivo {zip_name}'
             
             # verifica erros
             # status = result["status"]
@@ -160,8 +163,7 @@ class WorkerProcessor:
         try:
             self.logger_service.clear_transaction_id()
             self.logger_service.info("<<<--- INÍCIO PROCESSOR --->>>")
-            self.logger_service.info("Modo DEBUG: " + str(self.DEBUG))
-            self.logger_service.info("ENVIRONMENT: " + ENVIRONMENT)
+            self.logger_service.info(f"Modo DEBUG: {str(self.DEBUG)} - ENVIRONMENT: {ENV}")
             sucesso, msg = self.run()
             self.logger_service.info(msg)
             return sucesso, msg        

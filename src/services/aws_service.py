@@ -15,6 +15,9 @@ class AwsService:
     def sign_sqs(self):
         return boto3.client('sqs', aws_access_key_id=ACCESS_KEY, aws_secret_access_key=SECRET_KEY, region_name=REGION_NAME)
     
+    def sign_sts(self):
+        return boto3.client('sts', aws_access_key_id=ACCESS_KEY, aws_secret_access_key=SECRET_KEY, region_name=REGION_NAME)    
+    
     def session(self):
         s3 = boto3.Session(aws_access_key_id=ACCESS_KEY,
                         aws_secret_access_key=SECRET_KEY)
@@ -29,6 +32,11 @@ class AwsService:
         except Exception as ex:
             msg = f'Erro ao fazer upload para o S3: {str(ex)}'
             return False, msg
+        
+    def check_credentials(self):
+        sts_client = self.sign_sts()
+        response = sts_client._get_credentials() #get_caller_identity()
+        print("Current identity:", response['Arn'])        
 
     def download(self, s3_path, download_path):
         try:
