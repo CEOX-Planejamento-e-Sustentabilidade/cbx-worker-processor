@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
 import os
-from src.version.env import ENV
+from version.env import ENV
 
 # Load the appropriate .env file
 if ENV == 'production':

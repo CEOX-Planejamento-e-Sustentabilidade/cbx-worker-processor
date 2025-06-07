@@ -1,4 +1,3 @@
-from datetime import datetime
 import shutil
 import uuid
 
@@ -10,7 +9,6 @@ from services.file_service import FileService
 from services.logger_service import LoggerService
 from services.nf_service import NotaFiscalService
 from os.path import join
-from src.version.env import ENV
 
 from services.utils import format_title
 
