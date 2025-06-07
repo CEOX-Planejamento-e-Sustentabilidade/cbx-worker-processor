@@ -1,3 +1,4 @@
+from datetime import datetime
 import shutil
 import uuid
 
@@ -17,6 +18,7 @@ class WorkerProcessor:
         self.aws_service = AwsService()
         self.file_service = FileService()
         self.logger_service = LoggerService()
+        self.DEBUG = DEBUG
                     
     def run(self):
         try:
@@ -29,7 +31,7 @@ class WorkerProcessor:
             folder = ''
             download_path = ''            
             
-            if DEBUG:
+            if self.DEBUG:
                 #json_user = json.loads('{"auth": true, "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImVkemF0YXJpbkBnbWFpbC5jb20iLCJ1c2VyIjpbMTMzLCJoZWxkZXJAY2J4c3VzdGVudGFiaWxpZGFkZS5jb20uYnIiLCIwMzUxYTMyYzc0MTU1ZDRkZTcxOGYyYWYwYTU5ZmY3N2M1MGExODIwYjk4OTZiYmQ0ZjMyYzMxYWQ1YTkwODQyIix7Im5hbWUiOiJIZWxkZXIgQ2FzdHJvIiwiY2xpZW50cyI6WzMsMiwxLDcsMTJdLCJzZW5kX3F1ZXVlIjp0cnVlLCJtZXNzYWdlX2dyb3VwIjoiQ0JYIn0sdHJ1ZSwiYW5hbGlzdGEiXX0.VyaUdL6cIJWOlEYdaR2n8c9VhIpu4wmAkij3_KDuocI", "role": "analista", "clients": [3, 2, 1, 7, 12]}')
                 #token = f'Bearer {json_user["token"]}'
                 #userdata = jwt.decode(token.replace('Bearer ', ''), JWT_SECRET, algorithms=['HS256'])                                
@@ -37,14 +39,15 @@ class WorkerProcessor:
                 #message_group = userdata['user'][3]['message_group'] if 'message_group' in userdata['user'][3] else 'NO_MSG_GROUP'
                 
                 transaction_id = '4f3f8a5b-a8ec-493f-87ff-144205ee12r4'                
-                tipo = 22 # 1: insumos, 2: milho, 5: cbios, 21: danfe, 22: sefaz, 23: chaves
+                tipo = 23 # 1: insumos, 2: milho, 5: cbios, 21: danfe, 22: sefaz, 23: chaves
                 email = 'edzatarin@gmail.com'
                 email_request = 'edzatarin@gmail.com'
                 zip_name = 'NF 3498'
                 #s3_path = 'input/Relatórios e NF-e Fertilizantes (2)-19e83c659.zip'
                 #s3_path = 'input/NF 3498-b927eedbc.zip'
-                s3_path = 'input/sefaz - 13.243.389-3 - Saida.zip'
-                client_id = 1
+                #s3_path = 'input/sefaz - 13.243.389-3 - Saida.zip'
+                s3_path = 'input/Teste-31fef1863.zip'
+                client_id = 9 #grupo farias
                 message_group = 'CBX'
                 user_id = 139
                 raw_send_queue = 'True'
@@ -83,11 +86,12 @@ class WorkerProcessor:
                 raw_send_queue = os.getenv("SEND_QUEUE")
                 send_queue = str(raw_send_queue).strip().lower() in ("true")
             
-            self.logger_service.info('-------------------')
-            self.logger_service.info('VALORES RECEBIDOS:')
-            self.logger_service.info('-------------------')
+            self.logger_service.set_transaction_id(transaction_id)
+            #self.logger_service.info('-------------------')
+            #self.logger_service.info('VALORES RECEBIDOS:')
+            #self.logger_service.info('-------------------')
             self.logger_service.info(format_title('transaction id', transaction_id))
-            self.logger_service.info(format_title('file name', zip_name))                
+            self.logger_service.info(format_title('file name', zip_name))
             self.logger_service.info(format_title('tipo', tipo))
             if email_request:
                 self.logger_service.info(format_title('email robo', email_request))
@@ -98,7 +102,7 @@ class WorkerProcessor:
             self.logger_service.info(format_title('user id', user_id))
             self.logger_service.info(format_title('send queue', send_queue) +" - "+ format_title('raw send queue', raw_send_queue) )
             self.logger_service.info(format_title('request origin', request_origin))
-            self.logger_service.info('-------------------')
+            #self.logger_service.info('-------------------')
                                                
             # cria pasta para o arquivo zip        
             hash_id = str(uuid.uuid4()).replace('-', '')[:9]
@@ -124,7 +128,7 @@ class WorkerProcessor:
             result = nf_service.unzip_file_and_process(s3_path, zip_name, download_path, tipo,
                 send_queue, user_id, message_group, email_send, transaction_id, request_origin, client_id)
             
-            return True, f'Arquivo {zip_name} processado com sucesso!'
+            return True, f'Fim do processamento do arquivo {zip_name}'
             
             # verifica erros
             # status = result["status"]
@@ -132,7 +136,7 @@ class WorkerProcessor:
             # if not status and erros:
             #     email_service = EmailService()
             #     error_str = email_service.get_flat_html_from_list(erros)
-            #     if not DEBUG:
+            #     if not self.DEBUG:
             #         #email_send = email_request if request_origin == 'ROBO' else email
             #         email_send = EMAIL_FROM
             #         sucesso, code, msg = email_service.send_error(email_send, error_str, zip_name, transaction_id)
@@ -151,12 +155,13 @@ class WorkerProcessor:
 
             if download_path and os.path.exists(download_path):
                 os.remove(download_path) 
-    
+            
     def iniciar_worker(self):
         try:
+            self.logger_service.clear_transaction_id()
             self.logger_service.info("<<<--- INÍCIO PROCESSOR --->>>")
-            self.logger_service.info("Modo DEBUG: " + str(DEBUG))
-            self.logger_service.info("ENVIRONMENT: " + ENVIRONMENT)            
+            self.logger_service.info("Modo DEBUG: " + str(self.DEBUG))
+            self.logger_service.info("ENVIRONMENT: " + ENVIRONMENT)
             sucesso, msg = self.run()
             self.logger_service.info(msg)
             return sucesso, msg        

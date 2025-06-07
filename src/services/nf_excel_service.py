@@ -1,14 +1,13 @@
 import json
-import unicodedata
 import pandas as pd
 from pathlib import Path
 from configs import DEBUG
 from services.nf_logger_service import NotaFiscalLoggerService
 from services.sefaz_service import SefazService
 
-class NotaFiscalExcelService:
+class NotaFiscalExcelService(NotaFiscalLoggerService):
     def __init__(self):
-        self.nf_logger_service = NotaFiscalLoggerService()
+        pass
             
     def save_sefaz(self, df: pd.DataFrame):
         bd = []
@@ -115,7 +114,7 @@ class NotaFiscalExcelService:
             total = len(files)             
             while i < total:
                 if DEBUG:
-                    self.nf_logger_service.track_log(f'{i} de {total}')
+                    self.track_log(f'{i} de {total}')
                     
                 f = files[i]
                 if "__MACOSX" not in str(f):
@@ -124,7 +123,7 @@ class NotaFiscalExcelService:
                         if keys_nf is not None and not keys_nf.empty:
                             dados.append(keys_nf)
                             if DEBUG:
-                                self.nf_logger_service.track_log(f'arquivo {str(f)} - {len(keys_nf)} chaves')
+                                self.track_log(f'arquivo {str(f)} - {len(keys_nf)} chaves')
                         if ers:
                             erros.extend(ers)
                     except Exception as ex:
