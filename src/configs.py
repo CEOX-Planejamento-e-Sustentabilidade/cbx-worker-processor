@@ -2,11 +2,6 @@ from dotenv import load_dotenv
 import os
 from src.version.env import ENV
 
-# Determine which environment we're in
-#ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')  # default to 'development'
-#ENVIRONMENT = 'production'
-#ENVIRONMENT = 'development'
-
 # Load the appropriate .env file
 if ENV == 'production':
     env_path = os.path.join(os.path.dirname(__file__), '.env.prod')

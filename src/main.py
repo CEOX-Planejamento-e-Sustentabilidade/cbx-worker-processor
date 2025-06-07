@@ -10,6 +10,7 @@ from services.file_service import FileService
 from services.logger_service import LoggerService
 from services.nf_service import NotaFiscalService
 from os.path import join
+from src.version.env import ENV
 
 from services.utils import format_title
 
@@ -161,7 +162,7 @@ class WorkerProcessor:
             self.logger_service.clear_transaction_id()
             self.logger_service.info("<<<--- INÍCIO PROCESSOR --->>>")
             self.logger_service.info("Modo DEBUG: " + str(self.DEBUG))
-            self.logger_service.info("ENVIRONMENT: " + ENVIRONMENT)
+            self.logger_service.info("ENVIRONMENT: " + ENV)
             sucesso, msg = self.run()
             self.logger_service.info(msg)
             return sucesso, msg        
