@@ -1,5 +1,6 @@
 src/.env.dev
 src/.env.prod
+src/version/env.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -548,8 +548,6 @@ class NotaFiscalProcessorService:
             
     # 13. send email completo do log
     def send_email_logs(self):
-        if self.DEBUG:
-            return        
         # pega o tipo
         tipo_str = self.get_tipo_str(self.tipo)
         

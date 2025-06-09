@@ -4,6 +4,7 @@ from services.logger_service import LoggerService
 
 class NotaFiscalLoggerService(LoggerService):
     def __init__(self):
+        super().__init__()
         self.logs = []
         self.errors = []
         
